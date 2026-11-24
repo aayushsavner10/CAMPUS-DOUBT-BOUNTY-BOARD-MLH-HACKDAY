@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peer-to-Peer Micro-Skill & Doubt Bounty Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500..800&family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Header / Masthead -->
+  <header class="masthead-wrap">
+    <div class="masthead">
+      <div class="brand-wrap">
+        <div class="coin-icon" aria-hidden="true">?</div>
+        <div>
+          <h1>Campus Doubt Bounty Board</h1>
+          <p class="masthead-sub">Get quick written solutions with photos or 15-minute live help sessions from knowledgeable peers on campus.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn green" id="openPost">
+          <span>+</span> Post a Doubt
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Shell -->
+  <div class="shell">
+    <!-- Sidebar: Profile & Filters -->
+    <aside class="side">
+      <!-- Active Student Selector & Profile -->
+      <section class="panel" aria-label="Student Profile">
+        <label class="field">
+          <span>Viewing Campus As:</span>
+          <select id="userSelect" aria-label="Switch logged-in student profile"></select>
+        </label>
+        <div id="profile"></div>
+      </section>
+
+      <!-- Search & Filters -->
+      <section class="panel" aria-label="Search and Filters">
+        <div class="panel-title">Filter Doubts</div>
+        <label class="field">
+          <span>Search</span>
+          <input type="search" id="search" placeholder="Search bug, tool, or concept..." />
+        </label>
+        
+        <label class="field">
+          <span>Doubt Involvement</span>
+          <select id="filterOwner">
+            <option value="">All campus doubts</option>
+            <option value="asked">Asked by me</option>
+            <option value="helping">I'm helping / scheduled</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Skill Tag</span>
+          <select id="filterTag"></select>
+        </label>
+
+        <label class="field">
+          <span>Urgency Level</span>
+          <select id="filterUrgency">
+            <option value="">Any urgency</option>
+            <option value="exam">🚨 Exam tomorrow</option>
+            <option value="high">High priority</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Lifecycle Status</span>
+          <select id="filterStatus">
+            <option value="">Any status</option>
+            <option value="open">Open (Waiting for helper)</option>
+            <option value="proposed">Handshake / Proposed</option>
+            <option value="claimed">In Solution Session</option>
+            <option value="resolved">Resolved & Paid</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Sort By</span>
+          <select id="sortBy">
+            <option value="urgency">Most urgent first</option>
+            <option value="bounty">Highest bounty points</option>
+            <option value="newest">Newest first</option>
+          </select>
+        </label>
+
+        <label class="check">
+          <input type="checkbox" id="filterMine" />
+          <span>Only open doubts I have skills for</span>
+        </label>
+      </section>
+
+      <button class="btn quiet" id="resetBtn">Reset demo dataset</button>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main">
+      <!-- Live Metrics Summary -->
+      <div id="summary" class="summary-bar"></div>
+
+      <!-- Navigation Tabs -->
+      <nav class="tabs" aria-label="Main Navigation">
+        <button class="tab active" data-tab="dashboard">📊 Student Dashboard</button>
+        <button class="tab" data-tab="board">📌 Doubt Board</button>
+        <button class="tab" data-tab="vault">📚 Knowledge Vault</button>
+        <button class="tab" data-tab="solvers">🤝 My Solvers & Reviews</button>
+        <button class="tab" data-tab="leaderboard">🏆 Campus Leaderboard</button>
+      </nav>
+
+      <!-- Student Dashboard View -->
+      <section id="dashboardView">
+        <!-- Rendered dynamically by renderDashboard() -->
+      </section>
+
+      <!-- Doubt Feed View -->
+      <section id="boardView" hidden>
+        <div id="doubtList" class="feed"></div>
+      </section>
+
+      <!-- Knowledge Vault View (USP: Campus Solutions Library) -->
+      <section id="vaultView" hidden>
+        <!-- Rendered dynamically by renderVault() -->
+      </section>
+
+      <!-- My Solvers & Reviews View -->
+      <section id="solversView" hidden>
+        <!-- Rendered dynamically by renderMySolvers() -->
+      </section>
+
+      <!-- Leaderboard View -->
+      <section id="leaderboardView" hidden>
+        <div id="leaderboard"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Dialog: Post New Doubt -->
+  <dialog id="postDialog">
+    <form id="postForm" class="modal-content">
+      <h2>Post a Campus Doubt</h2>
+
+      <!-- USP: Smart Duplicate Radar -->
+      <div id="vaultMatchRadar" class="vault-radar-banner" hidden>
+        <span class="radar-icon">💡</span>
+        <div class="radar-text">
+          <strong id="radarCount">1 verified solution already exists in the Knowledge Vault!</strong>
+          <span id="radarTitle"></span>
+          <button type="button" class="btn ghost sm" id="radarViewBtn" style="margin-top: 4px;">
+            View Free Verified Solution in Vault
+          </button>
+        </div>
+      </div>
+      
+      <label>Doubt Title
+        <input type="text" id="pTitle" maxlength="110" required placeholder="e.g. Segmentation fault when deleting head node in C++" />
+      </label>
+
+      <label>What have you tried & error details?
+        <textarea id="pDesc" rows="3" required placeholder="Describe what fails, error codes, and compiler/tool output."></textarea>
+      </label>
+
+      <!-- Multiple Screenshots Attachment -->
+      <div class="file-upload-card">
+        <label class="file-upload-label" for="postImgFile">
+          <span>📷 Attach Screenshots of Bug / CAD Model (Multiple files supported)</span>
+          <input type="file" id="postImgFile" multiple accept="image/*" style="display:none;" />
+        </label>
+        <div id="postImgPreviewWrap" class="multi-preview-wrap" hidden></div>
+      </div>
+
+      <label>Relevant Skill Tags (comma-separated)
+        <input type="text" id="pTags" list="skillList" required placeholder="e.g. C++, DSA, Pointers" />
+        <datalist id="skillList"></datalist>
+      </label>
+
+      <div class="row">
+        <label>Urgency
+          <select id="pUrgency">
+            <option value="low">Low (Assignment next week)</option>
+            <option value="medium" selected>Medium (Due in 2 days)</option>
+            <option value="high">High (Due tonight)</option>
+            <option value="exam">🚨 Exam tomorrow morning</option>
+          </select>
+        </label>
+        <label>Bounty Points Offered
+          <input type="number" id="pBounty" min="5" max="100" step="5" value="25" required />
+        </label>
+      </div>
+
+      <p class="hint" id="postingAs"></p>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn quiet" id="cancelPost">Cancel</button>
+        <button type="submit" class="btn green">Post Doubt to Board</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog: Propose Help & Fix Format/Timing (Handshake) -->
+  <dialog id="proposeDialog">
+    <form id="proposeForm" class="modal-content">
+      <h2>Offer Help on this Doubt</h2>
+      
+      <div class="target-info-card">
+        <div class="target-info-title" id="proposeTargetTitle"></div>
+        <div class="target-info-sub">Asked by: <span id="proposeTargetAsker"></span></div>
+      </div>
+
+      <label>Preferred Help Method:
+        <select id="proposeHelpMode">
+          <option value="written" selected>📝 Written Solution & Photos (No video call needed)</option>
+          <option value="chat">💬 Live Text Chat & Code Discussion (Optional Video)</option>
+          <option value="video">📹 15-Minute Live Video Call (Screen-share on Google Meet)</option>
+        </select>
+      </label>
+
+      <label>When will you share the solution / connect?
+        <select id="proposeTimeSelect">
+          <option value="Right Now (Within 5-10 mins)">⚡ Right Now (Within 5-10 mins)</option>
+          <option value="In 15 minutes" selected>In 15 minutes</option>
+          <option value="In 30 minutes">In 30 minutes</option>
+          <option value="In 1 hour">In 1 hour</option>
+          <option value="Today at 5:00 PM">Today at 5:00 PM</option>
+          <option value="Today at 8:00 PM">Today at 8:00 PM</option>
+          <option value="custom">Pick a custom time...</option>
+        </select>
+      </label>
+
+      <div id="customTimeWrap" class="field" hidden>
+        <label>Custom Time / Date:
+          <input type="text" id="customTimeInput" placeholder="e.g. Today at 6:30 PM, or Tomorrow 10 AM" />
+        </label>
+      </div>
+
+      <label>Quick Note for Asker (Optional)
+        <textarea id="proposeNote" rows="2" placeholder="e.g. I had this exact issue last week, I will write out the exact fix with photos."></textarea>
+      </label>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn quiet" id="cancelPropose">Cancel</button>
+        <button type="submit" class="btn green">Send Help Offer</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog: Submit Formal Written Solution with Multiple Photos -->
+  <dialog id="solutionDialog">
+    <form id="solutionForm" class="modal-content">
+      <h2>Submit Written Solution & Photos</h2>
+      
+      <div class="target-info-card">
+        <div class="target-info-title" id="solDoubtTitle"></div>
+        <div class="target-info-sub">Your solution will be delivered to the asker for review and bounty award.</div>
+      </div>
+
+      <label>Step-by-step Solution Explanation / Code / Fix:
+        <textarea id="solText" rows="5" required placeholder="Explain the root cause and step-by-step fix in clear detail..."></textarea>
+      </label>
+
+      <!-- Multiple Photos Attachment for Solution -->
+      <div class="file-upload-card">
+        <label class="file-upload-label" for="solImgFile">
+          <span>📷 Attach Solution Photos / Annotated Screenshots (Multiple files supported)</span>
+          <input type="file" id="solImgFile" multiple accept="image/*" style="display:none;" />
+        </label>
+        <div id="solImgPreviewWrap" class="multi-preview-wrap" hidden></div>
+      </div>
+
+      <div class="dialog-actions">
+        <button type="button" class="btn quiet" id="cancelSolution">Cancel</button>
+        <button type="submit" class="btn green">Submit Solution & Notify Asker</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Dialog: Lightbox Image Viewer -->
+  <dialog id="imgDialog" class="lightbox">
+    <img id="lightImg" alt="Enlarged screenshot or photo" />
+    <p class="hint" style="color: #cbd5e1;">Click image or anywhere outside to close</p>
+    <button type="button" id="closeLightbox" class="btn ghost sm" style="margin-top: 6px;">Close Preview</button>
+  </dialog>
+
+  <!-- Toast Notifications -->
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <!-- Scripts -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
